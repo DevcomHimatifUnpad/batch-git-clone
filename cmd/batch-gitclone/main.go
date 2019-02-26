@@ -7,14 +7,11 @@ import (
 	"os/exec"
 )
 
-func gitClone(user, repo, dest string) {
+func gitClone(user, repo, dest string, done chan []byte) {
 	gitURL := fmt.Sprintf("git@github.com:%s/%s", user, repo)
 	cloneDir := fmt.Sprintf("%s/%s_%s", dest, user, repo)
-	out, err := exec.Command("git", "clone", gitURL, cloneDir).CombinedOutput()
-	if err != nil {
-		log.Printf("%s\n", err.Error())
-	}
-	log.Printf("%s\n", out)
+	out, _ := exec.Command("git", "clone", gitURL, cloneDir).CombinedOutput()
+	done <- out
 }
 
 func main() {
@@ -22,7 +19,7 @@ func main() {
 	var dest string
 
 	if len(os.Args) < 2 {
-		fmt.Println("usage: ./batch-gitclone <repo name>")
+		fmt.Println("usage: ./batch-gitclone <repo name> <destinatnion folder>")
 		return
 	}
 
@@ -79,9 +76,11 @@ func main() {
 		"NaufalA",
 	}
 
-	defer fmt.Println("finished")
+	done := make(chan []byte)
 
 	for _, student := range students {
-		gitClone(student, repoName, dest)
+		go gitClone(student, repoName, dest, done)
+		msg := <-done
+		log.Printf("%s\n", msg)
 	}
 }

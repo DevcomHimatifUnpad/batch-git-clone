@@ -8,8 +8,8 @@ import (
 	"os/exec"
 )
 
-func gitClone(user, repo, dest string) ([]byte, error) {
-	gitURL := fmt.Sprintf("git@github.com:%s/%s", user, repo)
+func gitClone(user, repo, dest, gitBaseURL string) ([]byte, error) {
+	gitURL := fmt.Sprintf("%s%s/%s", gitBaseURL, user, repo)
 	cloneDir := fmt.Sprintf("%s/%s_%s", dest, user, repo)
 	out, err := exec.Command("git", "clone", gitURL, cloneDir).Output()
 	if err != nil {
@@ -43,20 +43,27 @@ func file2slice(name string) ([]string, error) {
 }
 
 func main() {
-	var repoName string
-	var dest string
-	var usersFile string
+	var repoName, dest, usersFile, gitBaseURL string
 
-	if len(os.Args) < 4 {
-		fmt.Println("\nUsage: ./batch-gitclone <repo name> <destinatnion folder> <listUsername.txt>")
+	if len(os.Args) < 5 {
+		fmt.Println("\nUsage: ./batch-gitclone <ssh/https> <repo name> <destinatnion folder> <listUsername.txt>")
 		return
 	}
 
-	repoName = os.Args[1]
-	dest = os.Args[2]
-	usersFile = os.Args[3]
+	if os.Args[1] == "ssh" {
+		gitBaseURL = "git@github.com:"
+	} else if os.Args[1] == "https" {
+		gitBaseURL = "https://github.com/"
+	} else {
+		log.Fatalf("Unknown protocol %s. Please choose ssh or https", os.Args[1])
+		return
+	}
 
-	fmt.Println("clonning into " + dest)
+	repoName = os.Args[2]
+	dest = os.Args[3]
+	usersFile = os.Args[4]
+
+	log.Println(">>> Clonning into " + dest)
 
 	students, err := file2slice(usersFile)
 	if err != nil {
@@ -68,7 +75,7 @@ func main() {
 
 	for _, student := range students {
 		go (func(student string) {
-			msg, err := gitClone(student, repoName, dest)
+			msg, err := gitClone(student, repoName, dest, gitBaseURL)
 			if err != nil {
 				done <- []byte(err.Error())
 				return
@@ -79,4 +86,5 @@ func main() {
 	}
 
 	log.Printf("%s", <-done)
+	log.Print(">>> Finished")
 }

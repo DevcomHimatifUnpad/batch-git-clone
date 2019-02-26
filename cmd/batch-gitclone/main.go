@@ -48,7 +48,7 @@ func main() {
 	var usersFile string
 
 	if len(os.Args) < 4 {
-		fmt.Println("\nUsage: ./batch-gitclone <repo name> <destinatnion folder> <list of username>")
+		fmt.Println("\nUsage: ./batch-gitclone <repo name> <destinatnion folder> <listUsername.txt>")
 		return
 	}
 
